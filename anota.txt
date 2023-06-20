@@ -1,0 +1,217 @@
+#
+inc/commonglpi.class.php
+    gerenciar nome do tipo de item,
+    gerenciar guias de itens,
+    gerenciar menu de itens,
+    fazer alguma exibição,
+    obter URLs (formulário, pesquisa, …),
+    …
+
+
+
+#inc/commondbtm.class.php 
+    adicionar, atualizar ou excluir linhas de banco de dados,
+    carregar uma linha do banco de dados,
+    obter informações da tabela (nome, índices, relações, …)
+    - gerenciar a lista,
+    - importar dados,
+    …
+    #.CommonDBVisible -  Esta classe ajuda no gerenciamento de visibilidade. Ele herda de CommonDBTM 
+            Ele fornece métodos para:
+            saber se o usuário pode visualizar o item,
+            obter parâmetros suspensos,
+            … 
+    #.CommonDBConnexity - Esta classe fatoriza a relação de banco de dados e coisas de herança. Ele herda de CommonDBTM .
+
+
+    #.Lista suspensa CommonTree
+        inc/commondropdown.class.php - Isso o ajudará principalmente a gerenciar o aspecto da árvore de um menu suspenso (pais, filhos e assim por diante).
+             
+                 
+        #.Lista suspensa CommonImplicitTree
+        inc/commonimplicittreedropdown.class.php - Esta classe gerencia listas de árvores que não podem ser gerenciadas pelo usuário. Ele herda de CommonTreeDropdown . 
+        
+            
+        $DB->request(['FROM' => 'glpi_computers']);
+        // => SELECT * FROM `glpi_computers`
+
+        $DB->request('glpi_computers');
+        // => SELECT * FROM `glpi_computers`  
+        
+        $DB->request(['SELECT' => 'id', 'FROM' => 'glpi_computers']);
+        // => SELECT `id` FROM `glpi_computers`
+
+        $DB->request(['FIELDS' => 'id', 'FROM' => 'glpi_computers']);
+        // => SELECT `id` FROM `glpi_computers`
+
+        $DB->request(['SELECT' => 'name', 'DISTINCT' => true, 'FROM' => 'glpi_computers']);
+        // => SELECT DISTINCT `name` FROM `glpi_computers`
+
+        $DB->request(['FIELDS' => 'name', 'DISTINCT' => true, 'FROM' => 'glpi_computers']);
+        // => SELECT DISTINCT `name` FROM `glpi_computers`
+
+        DB->request(['FIELDS' => ['glpi_computers' => ['id', 'name']], 'FROM' => 'glpi_computers']);
+        // => SELECT `glpi_computers`.`id`, `glpi_computers`.`name` FROM `glpi_computers`"
+
+
+        //JOIN
+        $DB->request(['FROM' => ['glpi_computers', 'glpi_computerdisks'],
+                'FKEY' => ['glpi_computers'=>'id',
+                            'glpi_computerdisks'=>'computer_id']]);
+    
+        $DB->request(['glpi_computers', 'glpi_computerdisks'],
+                ['FKEY' => ['glpi_computers'=>'id',
+                            'glpi_computerdisks'=>'computer_id']]);
+        // => SELECT * FROM `glpi_computers`, `glpi_computerdisks` WHERE `glpi_computers`.`id` = `glpi_computerdisks`.`computer_id`
+        
+        
+        //LEFT
+        $DB->request(['FROM'      => 'glpi_computers',v'LEFT JOIN' => ['glpi_computerdisks' => ['FKEY' => ['glpi_computers'     => 'id',v'glpi_computerdisks' => 'computer_id']]]]);
+        // => SELECT * FROM `glpi_computers`
+        //       LEFT JOIN `glpi_computerdisks`
+        //         ON (`glpi_computers`.`id` = `glpi_computerdisks`.`computer_id`)
+
+
+        //INNER 
+        $DB->request(['FROM'       => 'glpi_computers',
+              'INNER JOIN' => ['glpi_computerdisks' => ['FKEY' => ['glpi_computers'     => 'id',
+                                                                   'glpi_computerdisks' => 'computer_id']]]]);
+        // => SELECT * FROM `glpi_computers`
+        //       INNER JOIN `glpi_computerdisks`
+        //         ON (`glpi_computers`.`id` = `glpi_computerdisks`.`computer_id`)
+
+        //AND Ou OR
+
+        $DB->request([
+        'FROM'       => 'glpi_computers',
+        'INNER JOIN' => [
+            'glpi_computerdisks' => [
+                'FKEY' => [
+                    'glpi_computers'     => 'id',
+                    'glpi_computerdisks' => 'computer_id',
+                    ['OR' => ['glpi_computers.field' => ['>', 42]]]
+                ]
+            ]
+        ]
+        ]);
+
+        // => SELECT * FROM `glpi_computers`
+        //       INNER JOIN `glpi_computerdisks`
+        //         ON (`glpi_computers`.`id` = `glpi_computerdisks`.`computer_id` OR
+        //              `glpi_computers`.`field` > '42'
+        //            )
+
+        //Contadores
+        $DB->request(['FROM' => 'glpi_computers', 'COUNT' => 'cpt']);
+        // => SELECT COUNT(*) AS cpt FROM `glpi_computers`
+
+
+        //GROUP BY
+        $DB->request(['FROM' => 'glpi_computers', 'ORDER' => 'name']);
+        // => SELECT * FROM `glpi_computers` ORDER BY `name`
+
+        $DB->request('glpi_computers', ['ORDER' => ['date_mod DESC', 'name ASC']]);
+        // => SELECT * FROM `glpi_computers` ORDER BY `date_mod` DESC, `name` ASC
+
+        $DB->request('glpi_computers', ['START' => 5, 'LIMIT' => 10]);
+        / => SELECT * FROM `glpi_computers` LIMIT 10 OFFSET 5"
+        !IMPORtANTIAL
+        $DB->request(['FROM' => 'glpi_computers', 'WHERE' => ['is_deleted' => 0]]);
+        // => SELECT * FROM `glpi_computers` WHERE `is_deleted` = 0
+
+        $DB->request(['FROM' => 'glpi_computers', 'WHERE' => ['is_deleted' => 0,
+                                        'name'       => 'foo']);
+        // => SELECT * FROM `glpi_computers` WHERE `is_deleted` = 0 AND `name` = 'foo'
+
+        $DB->request(['FROM' => 'glpi_computers', 'WHERE' => ['users_id' => [1,5,7]]]);
+        // => SELECT * FROM `glpi_computers` WHERE `users_id` IN (1, 5, 7)
+
+
+        //INSERT
+        $DB->insert(
+        'glpi_my_table', [
+        'a_field'      => 'My value',
+        'other_field'  => 'Other value'
+            ]
+        );
+
+        //update
+        $DB->update(
+        'glpi_my_table', [
+        'a_field'      => 'My value',
+        'other_field'  => 'Other value'
+        ], [
+        'id' => 42
+        ]
+        );
+        // => UPDATE `glpi_my_table` SET `a_field` = 'My value', `other_field` = 'Other value' WHERE `id`
+
+        //DELETE 
+        $DB->delete(
+        'glpi_my_table', [
+        'id' => 42 ]);
+        // => DELETE FROM `glpi_my_table` WHERE `id` = 42
+
+        //Mecanismo de busca
+        show(): exibe a página de pesquisa completa.
+        $itemtype = 'Computer';
+        Search::show($itemtype);
+
+        showGenericSearch(): exibe apenas o formulário multicritério. exibir apenas o formulário multicritério (com algumas opções adicionais):
+        $itemtype = 'Computer';
+        $p = [
+        'addhidden'   => [ // some hidden inputs added to the criteria form
+        'hidden_input' => 'OK'
+        ],
+        'actionname'  => 'preview', //change the submit button name
+        'actionvalue' => __('Preview'), //change the submit button label
+        ];
+        Search::showGenericSearch($itemtype, $p);
+
+        Se você deseja exibir apenas uma lista sem o formulário de critérios:
+            // display a list of users with entity = 'Root entity'
+        $itemtype = 'User';
+        $p = [
+        'start'      => 0,      // start with first item (index 0)
+        'is_deleted' => 0,      // item is not deleted
+        'sort'       => 1,      // sort by name
+        'order'      => 'DESC'  // sort direction
+        'reset'      => 'reset',// reset search flag
+        'criteria'   => [
+            [
+                'field'      => 80,        // field index in search options
+                'searchtype' => 'equals',  // type of search
+                'value'      => 0,         // value to search
+            ],
+        ],
+        ];
+        Search::showList($itemtype, $p);
+
+        Preferências de exibição
+        A glpi_displaypreferencestabela armazena a lista de colunas padrão que precisam ser exibidas a um usuário para um tipo de item.
+
+        Um conjunto de preferências pode ser pessoal ou global ( ). Se um usuário não tiver preferências pessoais para um tipo de item, o mecanismo de pesquisa usará as preferências globais.users_id = 0
+
+        Ações massivas
+        Adicionar às listas de pesquisa de tipos de item :
+        A primeira opção do Actionsbotão é Update. Permite modificar o conteúdo dos campos dos itens selecionados.
+        A lista de campos exibida na sublista depende das opções de pesquisa do tipo de item atual. 
+        Por padrão, todas as opções de Pesquisa são exibidas automaticamente nesta lista. 
+        Para proibir esta exibição para um campo, você deve definir a chave massiveactioncomo false na declaração de opções de pesquisa , exemplo:
+        $tab[] = [
+        'id'            => '1',
+        'table'         => self::getTable(),
+        'field'         => 'name',
+        'name'          => __('Name'),
+        'datatype'      => 'itemlink',
+        'massiveaction' => false // <- NO MASSIVE ACTION
+        ];
+
+        O arquivo extra config/local_define.phpserá carregado, se presente. 
+        Ele permite que você altere algumas configurações do framework GLPI.
+        Alterar nível de registro
+        O nível de log é declarado com a GLPI_LOG_LVLconstante; e confie nos níveis Monolog disponíveis . 
+        O nível de log padrão será alterado se o modo de depuração estiver ativado na GUI ou não. 
+        Para alterar o nível de log para ERROR, adicione o seguinte ao seu local_define.php arquivo:
+
+        define('GLPI_LOG_LVL', \Monolog\Logger::ERROR);
